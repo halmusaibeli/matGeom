@@ -7,6 +7,9 @@ function poly2 = clipConvexPolygon3dHP(poly, plane, varargin)
 %   The result POLY2 is also an array of 3d points, sometimes smaller than
 %   poly, and that can be 0-by-3 (empty polygon).
 %
+%   varargin{1} : 'above' | 'below' ; Specify to keep the clipped mesh
+%                 above or below the clip container
+%
 %   POLY2 = clipConvexPolygon3dHP(POLY, PT0, NORMAL)
 %   uses plane with normal NORMAL and containing point PT0.
 %
@@ -23,13 +26,6 @@ function poly2 = clipConvexPolygon3dHP(poly, plane, varargin)
 %   HISTORY
 %   2007/14/09 fix postprocessing of last point
 
-
-if nargin>2
-  above_below = varargin{1};
-else
-  above_below = false;
-end
-
 % ensure last point is the same as the first one
 if sum(poly(end, :) == poly(1,:)) ~= 3
     poly = [poly; poly(1,:)];
@@ -39,12 +35,12 @@ end
 poly2 = zeros(0, 2);
 
 % compute visible points
-if above_below
-    below = isAbovePlane(poly, plane);
+if nargin>2
+    ab = varargin{1};
+    below = keeper(poly, plane, ab);
 else
-    below = isBelowPlane(poly, plane);
+    below = isBelowPlane(poly,plane);
 end
-
 % case of empty polygon
 if sum(below) == 0
     return;

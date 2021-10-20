@@ -8,6 +8,12 @@ function [nodes2, faces2] = clipConvexPolyhedronHP(nodes, faces, plane, varargin
 %   clipped vertices and new created vertices, FACES2 contains references
 %   to NODES2 vertices.
 %
+%   varargin{1} : 'above' | 'below' ; Specify to keep the clipped mesh
+%                 above or below the clip container
+%
+%   varargin{2} : Do not create new faces for the added verticies. Needed
+%                 if verticies created are coplanar
+%
 %   Example
 %     [N, F] = createCube;
 %     P = createPlane([.5 .5 .5], [1 1 1]);
@@ -32,19 +38,6 @@ function [nodes2, faces2] = clipConvexPolyhedronHP(nodes, faces, plane, varargin
 % Created: 2007-09-14,    using Matlab 7.4.0.287 (R2007a)
 % Copyright 2007 INRA - BIA PV Nantes - MIAJ Jouy-en-Josas.
 
-
-if nargin>3
-  above_below = varargin{1};
-else
-  above_below = false;
-end
-
-if nargin>4
-  ExcludeNewFaces = varargin{2};
-else
-  ExcludeNewFaces = false;
-end
-
 %% Preprocessing
 
 % used for identifying identical vertices
@@ -60,10 +53,12 @@ if isnumeric(faces)
 end
 
 % find vertices below the plane
-if above_below
-    b = isAbovePlane(nodes, plane);
+
+if nargin>3
+    ab = varargin{1};
+    b = keeper(nodes, plane, ab);
 else
-    b = isBelowPlane(nodes, plane);
+    b = isBelowPlane(nodes,plane);
 end
 
 % initialize results
@@ -97,7 +92,7 @@ for f = 1:length(faces)
 
     % clip polygon formed by face
     poly = nodes(face, :);
-    clipped = clipConvexPolygon3dHP(poly, plane, above_below);
+    clipped = clipConvexPolygon3dHP(poly, plane, ab);
 
     % identify indices of polygon vertices
     inds = zeros(1, size(clipped, 1));
@@ -160,6 +155,12 @@ if ~isempty(nodes2)
 end
 
 % remove faces outside plane and add the new face
+if nargin>4
+  ExcludeNewFaces = varargin{2};
+else
+  ExcludeNewFaces = false;
+end
+
 if ExcludeNewFaces
     faces2 = faces2(keep)';
 else

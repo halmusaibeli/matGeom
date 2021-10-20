@@ -1,4 +1,4 @@
-function poly2 = clipPolygon3dHP(poly, plane)
+function poly2 = clipPolygon3dHP(poly, plane, varargin)
 %CLIPPOLYGON3DHP clip a 3D polygon with Half-space.
 %
 %   usage
@@ -45,7 +45,11 @@ if sum(poly(end, :) == poly(1,:)) ~= 3
 end
 
 % compute index of position wrt plane for each vertex
-below = isBelowPlane(poly, plane);
+if nargin>2
+    below = keeper(poly, plane, varargin{1});
+else
+    below = isBelowPlane(poly,plane);
+end
 
 % in the case of a polygon totally over the plane, return empty array
 if sum(below) == 0
@@ -55,7 +59,11 @@ end
 
 % in the case of a polygon totally over the plane, return original polygon
 if sum(~below) == 0
-    poly2 = poly;
+    if nargin>2
+        poly2 = zeros(0, 3);
+    else
+        poly2 = poly;
+    end
     return;
 end
 
