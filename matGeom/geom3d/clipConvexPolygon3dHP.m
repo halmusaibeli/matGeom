@@ -1,4 +1,4 @@
-function poly2 = clipConvexPolygon3dHP(poly, plane)
+function poly2 = clipConvexPolygon3dHP(poly, plane, varargin)
 %CLIPCONVEXPOLYGON3DHP Clip a convex 3D polygon with Half-space.
 %
 %   POLY2 = clipConvexPolygon3dHP(POLY, PLANE)
@@ -23,6 +23,13 @@ function poly2 = clipConvexPolygon3dHP(poly, plane)
 %   HISTORY
 %   2007/14/09 fix postprocessing of last point
 
+
+if nargin>2
+  above_below = varargin{1};
+else
+  above_below = false;
+end
+
 % ensure last point is the same as the first one
 if sum(poly(end, :) == poly(1,:)) ~= 3
     poly = [poly; poly(1,:)];
@@ -32,7 +39,11 @@ end
 poly2 = zeros(0, 2);
 
 % compute visible points
-below = isBelowPlane(poly, plane);
+if above_below
+    below = isAbovePlane(poly, plane);
+else
+    below = isBelowPlane(poly, plane);
+end
 
 % case of empty polygon
 if sum(below) == 0
