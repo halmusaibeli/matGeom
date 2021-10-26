@@ -1,4 +1,4 @@
-function [nodes2, faces2] = clipConvexPolyhedronHP(nodes, faces, plane)
+function [nodes2, faces2] = clipConvexPolyhedronHP(nodes, faces, plane, varargin)
 %CLIPCONVEXPOLYHEDRONHP Clip a convex polyhedron by a plane.
 %
 %   [NODES2, FACES2] = clipConvexPolyhedronHP(NODES, FACES, PLANE)
@@ -7,6 +7,12 @@ function [nodes2, faces2] = clipConvexPolyhedronHP(nodes, faces, plane)
 %   specified plane, and with faces clipped accordingly. NODES2 contains
 %   clipped vertices and new created vertices, FACES2 contains references
 %   to NODES2 vertices.
+%
+%   varargin{1} : 'above' | 'below' ; Specify to keep the clipped mesh
+%                 above or below the clip container
+%
+%   varargin{2} : Do not create new faces for the added verticies. Needed
+%                 if verticies created are coplanar
 %
 %   Example
 %     [N, F] = createCube;
@@ -32,7 +38,6 @@ function [nodes2, faces2] = clipConvexPolyhedronHP(nodes, faces, plane)
 % Created: 2007-09-14,    using Matlab 7.4.0.287 (R2007a)
 % Copyright 2007 INRA - BIA PV Nantes - MIAJ Jouy-en-Josas.
 
-
 %% Preprocessing
 
 % used for identifying identical vertices
@@ -48,7 +53,13 @@ if isnumeric(faces)
 end
 
 % find vertices below the plane
-b = isBelowPlane(nodes, plane);
+
+if nargin>3
+    ab = varargin{1};
+    b = keeper(nodes, plane, ab);
+else
+    b = isBelowPlane(nodes,plane);
+end
 
 % initialize results
 Nn  = size(nodes, 1);
@@ -81,7 +92,7 @@ for f = 1:length(faces)
 
     % clip polygon formed by face
     poly = nodes(face, :);
-    clipped = clipConvexPolygon3dHP(poly, plane);
+    clipped = clipConvexPolygon3dHP(poly, plane, ab);
 
     % identify indices of polygon vertices
     inds = zeros(1, size(clipped, 1));
@@ -128,21 +139,33 @@ end
 
 %% Postprocessing
 
-% creates a new face formed by the added nodes
-[sortedNodes, I] = angleSort3d(nodes2);
+if ~isempty(nodes2)
+    % creates a new face formed by the added nodes
+    [sortedNodes, I] = angleSort3d(nodes2);
 
-% compute normal vector of new face, and reverse order if face points in
-% the opposite direction as plane normal
-newFaceNormal = meshFaceNormals(sortedNodes, 1:length(sortedNodes));
-if dot(newFaceNormal, planeNormal(plane)) < 0
-    I(2:end) = I(end:-1:2);
+    % compute normal vector of new face, and reverse order if face points in
+    % the opposite direction as plane normal
+    newFaceNormal = meshFaceNormals(sortedNodes, 1:length(sortedNodes));
+    if dot(newFaceNormal, planeNormal(plane)) < 0
+        I(2:end) = I(end:-1:2);
+    end
+
+    % compute vertex indices of new face
+    newFace = I' + Nn;
 end
 
-% compute vertex indices of new face
-newFace = I' + Nn;
-
 % remove faces outside plane and add the new face
-faces2 = {faces2{keep}, newFace};
+if nargin>4
+  ExcludeNewFaces = varargin{2};
+else
+  ExcludeNewFaces = false;
+end
+
+if ExcludeNewFaces
+    faces2 = faces2(keep)';
+else
+    faces2 = {faces2{keep}, newFace};
+end
 
 % remove clipped nodes, and add new nodes to list of nodes
 N2 = size(nodes2, 1);
